@@ -1,4 +1,4 @@
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, LogOut } from 'lucide-react';
 
 interface Club {
   id: string;
@@ -9,9 +9,10 @@ interface Club {
 interface HomeProps {
   clubs: Club[];
   onClubClick: (clubId: string, clubName: string) => void;
+  onLogout: () => void;
 }
 
-export default function Home({ clubs, onClubClick }: HomeProps) {
+export default function Home({ clubs, onClubClick, onLogout }: HomeProps) {
   return (
     <div>
       <div className="relative">
@@ -22,6 +23,13 @@ export default function Home({ clubs, onClubClick }: HomeProps) {
             className="h-20 md:h-24 w-auto"
           />
         </div>
+        <button
+          onClick={onLogout}
+          className="absolute top-4 left-4 md:top-6 md:left-6 flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white transition-all duration-300 hover:bg-red-700 active:scale-95"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="hidden sm:inline">Logout</span>
+        </button>
       </div>
       <div className="container mx-auto px-4 py-16">
         <header className="text-center mb-16">

@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Film, Brain, BookOpen, Users } from 'lucide-react';
 import Home from './pages/Home';
 import ClubPage from './pages/ClubPage';
+import Login from './pages/Login';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<string>('home');
+  const [currentPage, setCurrentPage] = useState<string>('login');
   const [selectedClub, setSelectedClub] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const loggedIn = localStorage.getItem('isLoggedIn');
+    if (loggedIn) {
+      setIsLoggedIn(true);
+      setCurrentPage('home');
+    }
+  }, []);
 
   const clubs = [
     {
@@ -24,8 +34,8 @@ function App() {
       icon: BookOpen,
     },
     {
-      id: 'reading-session',
-      name: 'Reading Session',
+      id: 'reading-club',
+      name: 'Reading Club',
       icon: Users,
     },
   ];
@@ -40,18 +50,32 @@ function App() {
     setSelectedClub(null);
   };
 
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+    setCurrentPage('home');
+    localStorage.setItem('isLoggedIn', 'true');
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentPage('login');
+    localStorage.removeItem('isLoggedIn');
+  };
+
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-fixed"
       style={{
-        backgroundImage: 'url(/image\ copy.png)',
+        backgroundImage: 'url(https://images.pexels.com/photos/5427881/pexels-photo-5427881.jpeg?auto=compress&cs=tinysrgb&w=1600)',
       }}
     >
-      <div className="min-h-screen bg-black/30">
-        {currentPage === 'home' ? (
-          <Home clubs={clubs} onClubClick={handleClubClick} />
+      <div className="min-h-screen bg-black/40">
+        {!isLoggedIn ? (
+          <Login onLogin={handleLogin} />
+        ) : currentPage === 'home' ? (
+          <Home clubs={clubs} onClubClick={handleClubClick} onLogout={handleLogout} />
         ) : (
-          <ClubPage clubId={selectedClub} onBack={handleBackHome} />
+          <ClubPage clubId={selectedClub} onBack={handleBackHome} onLogout={handleLogout} />
         )}
       </div>
     </div>

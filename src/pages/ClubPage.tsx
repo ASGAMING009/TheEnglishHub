@@ -1,11 +1,13 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import ImageUploadForm from '../components/ImageUploadForm';
+import CommentsSection from '../components/CommentsSection';
 
 interface ClubPageProps {
   clubId: string | null;
   onBack: () => void;
+  onLogout: () => void;
 }
 
 const clubInfo: Record<string, { name: string; description: string }> = {
@@ -21,20 +23,21 @@ const clubInfo: Record<string, { name: string; description: string }> = {
     name: 'Wall Magazine',
     description: 'Stay updated with our Wall Magazine. This platform showcases creative writings, articles, and artistic contributions from students, providing a space for expression and recognition of talent.',
   },
-  'reading-session': {
-    name: 'Reading Session',
-    description: 'Join our Reading Sessions and dive into the world of literature. We organize interactive reading events, book discussions, and literary appreciation sessions to cultivate a reading culture.',
+  'reading-club': {
+    name: 'Reading Club',
+    description: 'Join our Reading Club and dive into the world of literature. We organize interactive reading events, book discussions, and literary appreciation sessions to cultivate a reading culture.',
   },
 };
 
 interface Activity {
   id: string;
   image_url: string;
+  title: string;
   description: string;
   created_at: string;
 }
 
-export default function ClubPage({ clubId, onBack }: ClubPageProps) {
+export default function ClubPage({ clubId, onBack, onLogout }: ClubPageProps) {
   const club = clubId ? clubInfo[clubId] : null;
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +52,7 @@ export default function ClubPage({ clubId, onBack }: ClubPageProps) {
     try {
       const { data, error } = await supabase
         .from('club_activities')
-        .select('id, image_url, description, created_at')
+        .select('id, image_url, title, description, created_at')
         .eq('club_id', clubId)
         .order('created_at', { ascending: false });
 
@@ -76,13 +79,22 @@ export default function ClubPage({ clubId, onBack }: ClubPageProps) {
             className="h-20 md:h-24 w-auto"
           />
         </div>
-        <button
-          onClick={onBack}
-          className="absolute top-4 left-4 md:top-6 md:left-6 flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-all duration-300 hover:bg-blue-700 active:scale-95"
-        >
-          <ArrowLeft className="h-5 w-5" />
-          <span className="hidden sm:inline">Back</span>
-        </button>
+        <div className="absolute top-4 left-4 md:top-6 md:left-6 flex gap-2">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-all duration-300 hover:bg-blue-700 active:scale-95"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white transition-all duration-300 hover:bg-red-700 active:scale-95"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        </div>
       </div>
 
       <div className="container mx-auto px-4 py-20">
@@ -108,19 +120,25 @@ export default function ClubPage({ clubId, onBack }: ClubPageProps) {
             ) : activities.length === 0 ? (
               <p className="text-slate-600 text-lg">No activities posted yet. Be the first to share!</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-6">
                 {activities.map((activity) => (
-                  <div key={activity.id} className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                    <img src={activity.image_url} alt="Activity" className="w-full h-48 object-cover" />
-                    {activity.description && (
-                      <div className="p-4">
-                        <p className="text-slate-700 text-sm">{activity.description}</p>
+                  <div key={activity.id} className="bg-slate-50 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    <div className="md:flex">
+                      <div className="md:w-1/3">
+                        <img src={activity.image_url} alt="Activity" className="w-full h-64 md:h-full object-cover" />
                       </div>
-                    )}
-                    <div className="px-4 pb-4">
-                      <p className="text-xs text-slate-500">
-                        {new Date(activity.created_at).toLocaleDateString()}
-                      </p>
+                      <div className="p-6 md:w-2/3 flex flex-col">
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">{activity.title}</h3>
+                        {activity.description && (
+                          <p className="text-slate-700 mb-4 flex-grow">{activity.description}</p>
+                        )}
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs text-slate-500">
+                            {new Date(activity.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <CommentsSection activityId={activity.id} />
+                      </div>
                     </div>
                   </div>
                 ))}

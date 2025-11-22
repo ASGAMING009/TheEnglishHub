@@ -12,6 +12,8 @@ export default function ImageUploadForm({ clubId, onSuccess }: ImageUploadFormPr
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,46 +33,29 @@ export default function ImageUploadForm({ clubId, onSuccess }: ImageUploadFormPr
 
   const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!fileInputRef.current?.files?.[0] || !preview) return;
+    if (!fileInputRef.current?.files?.[0] || !preview || !title.trim()) return;
 
     setIsLoading(true);
     setError('');
 
     try {
       const file = fileInputRef.current.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('clubId', clubId);
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-activity`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
+      const imageBase64 = await fileToBase64(file);
 
       const { data: insertData, error: insertError } = await supabase
         .from('club_activities')
         .insert({
           club_id: clubId,
-          image_url: `data:${file.type};base64,${await fileToBase64(file)}`,
-          description: '',
+          image_url: `data:${file.type};base64,${imageBase64}`,
+          title: title.trim(),
+          description: description.trim(),
         });
 
       if (insertError) throw insertError;
 
       setPreview(null);
+      setTitle('');
+      setDescription('');
       setIsOpen(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
       onSuccess();
@@ -119,7 +104,7 @@ export default function ImageUploadForm({ clubId, onSuccess }: ImageUploadFormPr
               </button>
             </div>
 
-            <form onSubmit={handleUpload}>
+            <form onSubmit={handleUpload} className="space-y-4">
               {!preview ? (
                 <label className="block border-2 border-dashed border-blue-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-colors">
                   <Upload className="h-8 w-8 mx-auto mb-2 text-blue-600" />
@@ -135,7 +120,7 @@ export default function ImageUploadForm({ clubId, onSuccess }: ImageUploadFormPr
                 </label>
               ) : (
                 <div className="space-y-4">
-                  <img src={preview} alt="Preview" className="w-full rounded-lg" />
+                  <img src={preview} alt="Preview" className="w-full rounded-lg max-h-48 object-cover" />
                   <button
                     type="button"
                     onClick={() => {
@@ -149,14 +134,49 @@ export default function ImageUploadForm({ clubId, onSuccess }: ImageUploadFormPr
                 </div>
               )}
 
-              {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
+              {preview && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Post Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Enter post title"
+                      maxLength={100}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Add a description (optional)"
+                      maxLength={300}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      {description.length}/300
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {error && <p className="text-red-600 text-sm">{error}</p>}
 
               <button
                 type="submit"
-                disabled={!preview || isLoading}
-                className="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+                disabled={!preview || !title.trim() || isLoading}
+                className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
               >
-                {isLoading ? 'Uploading...' : 'Upload Picture'}
+                {isLoading ? 'Posting...' : 'Post Activity'}
               </button>
             </form>
           </div>
